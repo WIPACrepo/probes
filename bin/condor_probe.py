@@ -24,6 +24,7 @@ class CondorProbe(fifemon.Probe):
         post_pool_glideins: collect & aggregate glidein slot status
         post_pool_prio:     collect user priorities
         post_pool_jobs:     collect & aggregate user job status
+        post_pool_defrag:   collect & aggregate defrag information
     """
 
     def __init__(self, *args, **kwargs):
@@ -33,6 +34,7 @@ class CondorProbe(fifemon.Probe):
         self.post_pool_glideins = kwargs.pop('post_pool_glideins',False)
         self.post_pool_prio = kwargs.pop('post_pool_prio',True)
         self.post_pool_jobs = kwargs.pop('post_pool_jobs',False)
+        self.post_pool_defrag = kwargs.pop('post_pool_defrag',False)
         self.use_gsi_auth = kwargs.pop('use_gsi_auth',False)
         self.x509_user_key = kwargs.pop('x509_user_key',"")
         self.x509_user_cert = kwargs.pop('x509_user_cert',"")
@@ -82,6 +84,11 @@ class CondorProbe(fifemon.Probe):
             data = self.jobs.get_job_count(self.delay, self.retries)
             if self.use_graphite:
                 self.graphite.send_dict(self.namespace+".jobs", data, send_data=(not self.test))
+        if self.post_pool_defrag:
+            logger.info('querying pool {0} defrag'.format(self.pool))
+            data = condor.get_defrag_info(self.pool, self.delay, self.retries)
+            if self.use_graphite:
+                self.graphite.send_dict(self.namespace+".defrag", data, send_data=(not self.test))
 
         if self.use_gsi_auth:
             if save_key is None:
@@ -121,6 +128,7 @@ def get_options():
         'post_pool_glideins':config.getboolean("condor", "post_pool_glideins"),
         'post_pool_prio':    config.getboolean("condor", "post_pool_prio"),
         'post_pool_jobs':    config.getboolean("condor", "post_pool_jobs"),
+        'post_pool_defrag':  config.getboolean("condor", "post_pool_defrag"),
         'use_gsi_auth':      config.getboolean("condor", "use_gsi_auth"),
         'x509_user_key':     config.get("condor", "X509_USER_KEY"),
         'x509_user_cert':    config.get("condor", "X509_USER_CERT"),

@@ -34,7 +34,18 @@ class Jobs(object):
         """
         counters = []
 
-        exp_name = job_classad.get("AccountingGroup","group_none").split(".")[0][6:]
+        if isinstance(job_classad.get("AccountingGroup","None"),classad.ExprTree):
+            if int(job_classad.get("RequestGpus","0")) >= 1:
+                exp_name = "gpu"
+            else:
+                exp_name = "None"
+                
+        else:
+            try:
+                exp_name = job_classad.get("AccountingGroup","None").eval().split(".")[0][6:]
+            except Exception:
+                exp_name = "None"
+        
         user_name = job_classad.get("Owner","unknown")
 
         if job_classad["JobUniverse"] == 7:
@@ -134,7 +145,7 @@ class Jobs(object):
                         "QDate","ServerTime","JobCurrentStartDate","RemoteUserCpu",
                         "EnteredCurrentStatus","NumRestarts",
                         "RequestMemory","ResidentSetSize_RAW",
-                        "RequestDisk","DiskUsage_RAW","RequestCpus"])
+                        "RequestDisk","DiskUsage_RAW","RequestCpus","RequestGpus"])
                 except:
                     logging.warning("Trouble communicating with schedd {0}, retrying in {1}s.".format(a['Name'],retry_delay))
                     retries += 1
@@ -179,5 +190,7 @@ class Jobs(object):
                             counts[m+".disk_request_b"] += r.eval("RequestDisk")*1024
                         if "DiskUsage_RAW" in r:
                             counts[m+".disk_usage_b"] += r.eval("DiskUsage_RAW")*1024
+                        if "RequestGpus" in r:
+                            counts[m+".gpu_request"] += r.eval("RequestGpus")
 
         return counts
