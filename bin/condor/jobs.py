@@ -34,6 +34,8 @@ class Jobs(object):
         """
         counters = []
 
+        resource_type = "gpus" if job_classad.get("RequestGpus","0") != "0" else "cpus"
+
         if isinstance(job_classad.get("AccountingGroup","None"),classad.ExprTree):
             if int(job_classad.get("RequestGpus","0")) >= 1:
                 exp_name = "gpu"
@@ -49,9 +51,9 @@ class Jobs(object):
         user_name = job_classad.get("Owner","unknown")
 
         if job_classad["JobUniverse"] == 7:
-            counters = [".dag.totals"]
+            counters = [".dag.totals",".dag.{0}".format(resource_type)]
         elif job_classad["JobStatus"] == 1:
-            counters = [".idle.totals"]
+            counters = [".idle.totals", ".idle.{0}".format(resource_type)]
             if "DESIRED_usage_model" in job_classad:
                 models = set(job_classad["DESIRED_usage_model"].split(","))
                 if "DESIRED_Sites" in job_classad:
@@ -70,7 +72,7 @@ class Jobs(object):
             else:
                 counters.append(".idle.usage_models.unknown")
         elif job_classad["JobStatus"] == 2:
-            counters = [".running.totals"]
+            counters = [".running.totals",".running.{0}".format(resource_type)]
             if "MATCH_GLIDEIN_Site" in job_classad:
                 site = job_classad["MATCH_GLIDEIN_Site"]
                 if site == "FNAL" and "MATCH_EXP_JOBGLIDEIN_ResourceName" in job_classad:
@@ -79,9 +81,9 @@ class Jobs(object):
             else:
                 counters.append(".running.sites.unknown")
         elif job_classad["JobStatus"] == 5:
-            counters = [".held.totals"]
+            counters = [".held.totals",".held.{0}".format(resource_type)]
         else:
-            counters = [".unknown.totals"]
+            counters = [".unknown.totals",".unknown.{0}".format(resource_type)]
 
         metrics = []
         for counter in counters:
