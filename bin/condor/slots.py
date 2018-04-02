@@ -81,12 +81,23 @@ def get_pool_slots(pool, retry_delay=30, max_retries=4):
         slot_type = a.get("SlotType", "Static")
         state = a.get("State", "Unknown")
 
+        partitionable_gpu = []
+        if a.get("TotalSlotGpus","undefined") != "undefined":
+            partitionable_gpu.append("TotalSlotGpus")
+        elif a.get("Gpus","undefined") != "undefined":
+            partitionable_gpu.append("Gpus")
+
+        dynamic_gpu = []
+        if a.get("Gpus","undefined") != "undefined":
+            dynamic_gpu.append("Gpus")
+        
+                            
         if slot_type == "Partitionable":
             if a["Cpus"] == 0 or a["Memory"] < 1000 or a["Disk"] < 1048576:
-                for k in ["TotalDisk", "TotalSlotDisk",
+                for k in (["TotalDisk", "TotalSlotDisk",
                           "TotalMemory", "TotalSlotMemory",
                           "TotalCpus", "TotalSlotCpus",
-                          "TotalLoadAvg", "LoadAvg", "TotalCondorLoadAvg",'TotalSlotGpus','Gpus']:
+                           "TotalLoadAvg", "LoadAvg", "TotalCondorLoadAvg"] + partitionable_gpu):
                     #metric = ".".join([slot_type, "startds", sanitize(a["Name"]), k])
                     #data[metric] = a[k]
                     metric = ".".join([slot_type, "totals", k])
@@ -95,10 +106,10 @@ def get_pool_slots(pool, retry_delay=30, max_retries=4):
                 slot_type = "Dynamic"
                 state = "Unusable"
             else:
-                for k in ["TotalDisk", "TotalSlotDisk", "Disk", 
+                for k in (["TotalDisk", "TotalSlotDisk", "Disk", 
                           "TotalMemory", "TotalSlotMemory", "Memory",
                           "TotalCpus", "TotalSlotCpus", "Cpus",
-                          "TotalLoadAvg", "LoadAvg", "TotalCondorLoadAvg",'TotalSlotGpus','Gpus']:
+                           "TotalLoadAvg", "LoadAvg", "TotalCondorLoadAvg"] + partitionable_gpu):
                     #metric = ".".join([slot_type, "startds", sanitize(a["Name"]), k])
                     #data[metric] = a[k]
                     metric = ".".join([slot_type, "totals", k])
@@ -116,7 +127,7 @@ def get_pool_slots(pool, retry_delay=30, max_retries=4):
             if owner == "Unknown" and "RemoteOwner" in a:
                 owner = a["RemoteOwner"].split("@")[0]
 
-            for k in ["Disk", "Memory", "Cpus", "LoadAvg", "Gpus"]:
+            for k in (["Disk", "Memory", "Cpus", "LoadAvg"] + dynamic_gpu):
                 metric = ".".join([slot_type, state, sanitize(group), sanitize(owner), k])
                 data[metric] += a[k]
                 metric = ".".join([slot_type, "totals", k])
@@ -126,7 +137,7 @@ def get_pool_slots(pool, retry_delay=30, max_retries=4):
             metric = ".".join([slot_type, state, sanitize(group), sanitize(owner), "NumSlots"])
             data[metric] += 1
         if state != "Claimed" and slot_type != "Partitionable":
-            for k in ["Disk", "Memory", "Cpus", "Gpus"]:
+            for k in (["Disk", "Memory", "Cpus"] + dynamic_gpu):
                 metric = ".".join([slot_type, state, k])
                 data[metric] += a[k]
                 metric = ".".join([slot_type, "totals", k])
