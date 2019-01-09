@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from collections import defaultdict
+from math import ceil
 import re
 import logging
 import time
@@ -8,6 +9,19 @@ import classad
 import htcondor
 
 logger = logging.getLogger(__name__)
+
+# Bin memory by 1gb, 2gb, and  then factors of 4 until 32gb
+def memory_bining(mem):
+    value = 0
+    if mem <= 1024:
+        value = "lteq_1gb_mem"
+    elif mem <= 2048:
+        value = "lteq_2gb_mem"
+    elif mem > 32768:
+        value = "gt_32gb_mem"
+    else:
+        value = "lteq_{x}gb_mem".format(x=int(ceil((mem / 4) / 1024.0) * 4))
+    return value
 
 def sanitize(key):
     if key is None:
@@ -93,6 +107,16 @@ def get_pool_slots(pool, retry_delay=30, max_retries=4):
         
                             
         if slot_type == "Partitionable":
+            #Individual partitionable slot metrics
+            for k in (["Memory","Cpus","Disk"] + partitionable_gpu):
+                print a.get("Name","undefined")
+                match = re.search(r"^slot\d@(\w*)\..*$", a.get("Name","undefined"))
+                try:
+                    slot_name = match.group(1)
+                    metric = ".".join([slot_type, "slot", slot_name, k])
+                    data[metric] += a[k]
+                except:
+                    logger.warning("malformed match on {0}".format(a.get("Name","undefined")))
             if a["Cpus"] == 0 or a["Memory"] < 1000 or a["Disk"] < 1048576:
                 for k in (["TotalDisk", "TotalSlotDisk",
                           "TotalMemory", "TotalSlotMemory",
@@ -114,6 +138,7 @@ def get_pool_slots(pool, retry_delay=30, max_retries=4):
                     #data[metric] = a[k]
                     metric = ".".join([slot_type, "totals", k])
                     data[metric] += a[k]
+            
         if state == "Claimed":
             (group,owner) = ("Unknown","Unknown")
             if "AccountingGroup" in a:
@@ -135,6 +160,8 @@ def get_pool_slots(pool, retry_delay=30, max_retries=4):
             metric = ".".join([slot_type, state, sanitize(group), sanitize(owner), "Weighted"])
             data[metric] += a.eval("SlotWeight")
             metric = ".".join([slot_type, state, sanitize(group), sanitize(owner), "NumSlots"])
+            data[metric] += 1
+            metric = ".".join(["jobs", "totals", memory_bining(a["Memory"])])
             data[metric] += 1
         if state != "Claimed" and slot_type != "Partitionable":
             for k in (["Disk", "Memory", "Cpus"] + dynamic_gpu):
