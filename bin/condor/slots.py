@@ -110,7 +110,7 @@ def get_pool_slots(pool, retry_delay=30, max_retries=4):
             #Individual partitionable slot metrics
             for k in (["Memory","Cpus","Disk"] + partitionable_gpu):
                 print a.get("Name","undefined")
-                match = re.search(r"^slot\d@(\w*)\..*$", a.get("Name","undefined"))
+                match = re.search(r"^slot\d@([\w\-]*)\..*$", a.get("Name","undefined"))
                 try:
                     slot_name = match.group(1)
                     metric = ".".join([slot_type, "slot", slot_name, k])
