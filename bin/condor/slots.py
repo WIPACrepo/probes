@@ -64,7 +64,7 @@ def get_pool_resource_utilization(pool, retry_delay=30, max_retries=4):
     }
 
 
-def get_pool_slots(pool, retry_delay=30, max_retries=4):
+def get_pool_slots(pool, retry_delay=30, max_retries=4, pslot=False):
     coll =  htcondor.Collector(pool)
     retries = 0
     while retries < max_retries:
@@ -108,15 +108,16 @@ def get_pool_slots(pool, retry_delay=30, max_retries=4):
                             
         if slot_type == "Partitionable":
             #Individual partitionable slot metrics
-            for k in (["Memory","Cpus","Disk"] + partitionable_gpu):
-                print a.get("Name","undefined")
-                match = re.search(r"^slot\d@([\w\-]*)\..*$", a.get("Name","undefined"))
-                try:
-                    slot_name = match.group(1)
-                    metric = ".".join([slot_type, "slot", slot_name, k])
-                    data[metric] += a[k]
-                except:
-                    logger.warning("malformed match on {0}".format(a.get("Name","undefined")))
+            if pslot is True:
+                for k in (["Memory","Cpus","Disk"] + partitionable_gpu):
+                    match = re.search(r"^slot\d@([\w\-]*)\..*$", a.get("Name","undefined"))
+                    try:
+                        slot_name = match.group(1)
+                        metric = ".".join([slot_type, "slot", slot_name, k])
+                        data[metric] += a[k]
+                    except:
+                        logger.warning("malformed match on {0}".format(a.get("Name","undefined")))
+
             if a["Cpus"] == 0 or a["Memory"] < 1000 or a["Disk"] < 1048576:
                 for k in (["TotalDisk", "TotalSlotDisk",
                           "TotalMemory", "TotalSlotMemory",

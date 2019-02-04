@@ -31,6 +31,7 @@ class CondorProbe(fifemon.Probe):
         self.pool = kwargs.pop('pool', 'localhost')
         self.post_pool_status = kwargs.pop('post_pool_status',True)
         self.post_pool_slots = kwargs.pop('post_pool_slots',True)
+        self.post_pool_pslot = kwargs.pop('post_pool_pslot',False)
         self.post_pool_glideins = kwargs.pop('post_pool_glideins',False)
         self.post_pool_prio = kwargs.pop('post_pool_prio',True)
         self.post_pool_jobs = kwargs.pop('post_pool_jobs',False)
@@ -66,7 +67,7 @@ class CondorProbe(fifemon.Probe):
                             tags=self.influxdb_tags)
         if self.post_pool_slots:
             logger.info('querying pool {0} slots'.format(self.pool))
-            data = condor.get_pool_slots(self.pool, self.delay, self.retries)
+            data = condor.get_pool_slots(self.pool, self.delay, self.retries, self.post_pool_pslot)
             if self.use_graphite:
                 self.graphite.send_dict(self.namespace+".slots", data, send_data=(not self.test))
         if self.post_pool_glideins:
@@ -125,6 +126,7 @@ def get_options():
         'pool':              config.get("condor", "pool"),
         'post_pool_status':  config.getboolean("condor", "post_pool_status"),
         'post_pool_slots':   config.getboolean("condor", "post_pool_slots"),
+        'post_pool_pslot':   config.getboolean("condor", "post_pool_slots"),
         'post_pool_glideins':config.getboolean("condor", "post_pool_glideins"),
         'post_pool_prio':    config.getboolean("condor", "post_pool_prio"),
         'post_pool_jobs':    config.getboolean("condor", "post_pool_jobs"),
