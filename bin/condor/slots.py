@@ -108,7 +108,7 @@ def get_pool_slots(pool, retry_delay=30, max_retries=4, pslot=False):
                             
         if slot_type == "Partitionable":
             #Individual partitionable slot metrics
-            if pslot is True:
+            if pslot == True:
                 for k in (["Memory","Cpus","Disk"] + partitionable_gpu):
                     match = re.search(r"^slot\d@([\w\-]*)\..*$", a.get("Name","undefined"))
                     try:
