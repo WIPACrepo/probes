@@ -126,7 +126,7 @@ def get_options():
         'pool':              config.get("condor", "pool"),
         'post_pool_status':  config.getboolean("condor", "post_pool_status"),
         'post_pool_slots':   config.getboolean("condor", "post_pool_slots"),
-        'post_pool_pslot':   config.getboolean("condor", "post_pool_slots"),
+        'post_pool_pslot':   config.getboolean("condor", "post_pool_pslot"),
         'post_pool_glideins':config.getboolean("condor", "post_pool_glideins"),
         'post_pool_prio':    config.getboolean("condor", "post_pool_prio"),
         'post_pool_jobs':    config.getboolean("condor", "post_pool_jobs"),
